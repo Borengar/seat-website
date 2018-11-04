@@ -9,6 +9,7 @@ import 'vuetify/dist/vuetify.min.css'
 // Source pages
 import App from './App.vue'
 import Home from './Home.vue'
+import DiscordLogin from './DiscordLogin.vue'
 
 // Other stuff
 import axios from 'axios'
@@ -32,7 +33,8 @@ const router = new VueRouter({
 	base: __dirname,
 	routes: [
 		{ path: '/', redirect: '/home' },
-		{ path: '/home', component: Home, name: 'Home' }
+		{ path: '/home', component: Home, name: 'Home' },
+		{ path: '/discordlogin', component: DiscordLogin, name: 'Discord Login' }
 	]
 })
 
