@@ -25,7 +25,8 @@ module.exports = {
 		}),
 		new VueLoaderPlugin(),
 		new CopyWebpackPlugin([
-			{ from: './src/.htaccess', to: '' }
+			{ from: './src/.htaccess', to: '' },
+			{ from: './src/api', to: 'api' }
 		])
 	],
 	output: {

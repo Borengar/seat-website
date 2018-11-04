@@ -1,0 +1,6 @@
+{
+    "require": {
+        "slim/slim": "^3.11",
+        "mongodb/mongodb": "^1.4"
+    }
+}
