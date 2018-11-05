@@ -28,9 +28,11 @@ export default {
 		this.axios.post('/api/discordlogin', {
 			token: token
 		})
-		.then((response) => {
-			if (response.status == 200) {
-				//self.$router.push('/registration')
+		.then((result) => {
+			if (result.status == 200) {
+				self.axios.defaults.headers.common['Authorization'] = result.data.token
+				self.$router.push('/home')
+				self.$store.dispatch('init')
 			}
 		})
 		.catch((err) => {

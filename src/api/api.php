@@ -19,6 +19,30 @@ $app->add(function ($request, $response, $next) {
 	return $next($request, $response);
 });
 
+$app->add(function ($request, $response, $next) {
+	if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+		$mongoClient = new MongoDB\Client;
+		$collection = $mongoClient->seat->users;
+		$result = $collection->find([ 'token' => intval($_SERVER['HTTP_AUTHORIZATION']) ])->toArray();
+		$request = $request->withAttribute('authenticated', count($result) > 0);
+	}
+	return $next($request, $response);
+});
+
+$app->get('/user', function($request, $response) {
+	if (!$request->getAttribute('authenticated')) {
+		return $response->withStatus(401);
+	}
+
+	$mongoClient = new MongoDB\Client;
+
+	$collection = $mongoClient->seat->users;
+	$result = $collection->findOne([ 'token' => intval($_SERVER['HTTP_AUTHORIZATION']) ]);
+	return $response->withJson([
+		'discord' => $result['discord']
+	]);
+});
+
 $app->post('/discordlogin', function($request, $response) {
 	global $discordApi;
 	$mongoClient = new MongoDB\Client;

@@ -11,6 +11,9 @@ import App from './App.vue'
 import Home from './Home.vue'
 import DiscordLogin from './DiscordLogin.vue'
 
+// Custom components
+import DiscordProfile from './DiscordProfile.vue'
+
 // Other stuff
 import axios from 'axios'
 import VueAxios from 'vue-axios'
@@ -25,6 +28,7 @@ Vue.use(VueRouter)
 Vue.use(Vuetify, {
 	theme: theme
 })
+Vue.component('discord-profile', DiscordProfile)
 Vue.use(VueAxios, axios)
 Vue.use(Vuex)
 
@@ -40,11 +44,27 @@ const router = new VueRouter({
 
 const store = new Vuex.Store({
 	state: {
-
+		user: {
+			discord: { username: null, discriminator: null, id: null, avatar: null }
+		}
+	},
+	mutations: {
+		updateUser(state, payload) {
+			state.user.discord = payload.profile.discord
+		}
 	},
 	actions: {
 		init({ commit }) {
-
+			this.dispatch('updateUser')
+		},
+		updateUser({ commit }) {
+			axios.get('/api/user')
+			.then((response) => {
+				commit('updateUser', { profile: response.data })
+			})
+			.catch((err) => {
+				console.log(err)
+			})
 		}
 	}
 })
@@ -53,7 +73,7 @@ new Vue({
 	router,
 	store,
 	mounted: function() {
-		store.dispatch('init')
+		
 	},
 	components: { App },
 	template: `
