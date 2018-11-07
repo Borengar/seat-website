@@ -45,7 +45,8 @@ const router = new VueRouter({
 const store = new Vuex.Store({
 	state: {
 		user: {
-			discord: { username: null, discriminator: null, id: null, avatar: null }
+			discord: { username: null, discriminator: null, id: null, avatar: null },
+			token: null
 		}
 	},
 	mutations: {
@@ -73,7 +74,7 @@ new Vue({
 	router,
 	store,
 	mounted: function() {
-		
+
 	},
 	components: { App },
 	template: `

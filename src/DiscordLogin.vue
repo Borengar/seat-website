@@ -31,6 +31,8 @@ export default {
 		.then((result) => {
 			if (result.status == 200) {
 				self.axios.defaults.headers.common['Authorization'] = result.data.token
+				self.$store.state.user.token = result.data.token
+				localStorage.setItem('token', result.data.token)
 				self.$router.push('/home')
 				self.$store.dispatch('init')
 			}

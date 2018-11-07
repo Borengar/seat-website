@@ -11,7 +11,7 @@ export default {
 	name: 'Home',
 	computed:  {
 		loggedIn() {
-			return this.axios.defaults.headers.common.hasOwnProperty('Authorization')
+			return this.$store.state.user.token != null
 		}
 	},
 	methods: {
