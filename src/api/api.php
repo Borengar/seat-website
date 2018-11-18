@@ -4,8 +4,10 @@ use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 require_once './vendor/autoload.php';
 require_once './DiscordApi.php';
+require_once './OsuApi.php';
 
 $discordApi = new DiscordApi();
+$osuApi = new OsuApi();
 
 date_default_timezone_set('UTC');
 
@@ -102,6 +104,71 @@ $app->post('/discordlogin', function($request, $response) {
 
 	return $response->withJson([ 'token' => $token ]);
 
+});
+
+$app->post('/mappools', function($request, $response) {
+	if (!$request->getAttribute('authenticated')) {
+		return $response->withStatus(401);
+	}
+
+	$mongoClient = new MongoDB\Client;
+	$collection = $mongoClient->seat->mappools;
+	$result = $collection->insertOne([
+		'name' => 'New mappool',
+		'slots' => []
+	]);
+	$mappool = $collection->findOne([ '_id' => $result->getInsertedId() ]);
+
+	return $response->withJson([
+		'mappool' => [
+			'_id' => (string) $mappool['_id'],
+			'name' => $mappool['name'],
+			'slots' => $mappool['slots']
+		]
+	]);
+});
+
+$app->get('/mappools', function($request, $response) {
+	if (!$request->getAttribute('authenticated')) {
+		return $response->withStatus(401);
+	}
+
+	$mongoClient = new MongoDB\Client;
+	$collection = $mongoClient->seat->mappools;
+	$result = $collection->find()->toArray();
+
+	foreach ($result as &$mappool) {
+		$mappool['_id'] = (string) $mappool['_id'];
+	}
+
+	return $response->withJson($result);
+});
+
+$app->get('/osubeatmap/{id}', function($request, $response, $args) {
+	if (!$request->getAttribute('authenticated')) {
+		return $response->withStatus(401);
+	}
+
+	global $osuApi;
+	return $response->withJson($osuApi->getBeatmap($args['id']));
+});
+
+$app->get('/osubeatmapset/{id}', function($request, $response, $args) {
+	if (!$request->getAttribute('authenticated')) {
+		return $response->withStatus(401);
+	}
+
+	global $osuApi;
+	return $response->withJson($osuApi->getBeatmapset($args['id']));
+});
+
+$app->get('/osubeatmapsetsearch/{query}', function($request, $response, $args) {
+	if (!$request->getAttribute('authenticated')) {
+		return $response->withStatus(401);
+	}
+
+	global $osuApi;
+	return $response->withJson($osuApi->searchBeatmapsets($args['query']));
 });
 
 $app->run();

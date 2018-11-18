@@ -1,7 +1,17 @@
 <template lang="pug">
 v-app
+	v-navigation-drawer(app persistent v-if="loggedIn")
+		v-toolbar(color="light-primary")
+			v-list
+				v-list-tile
+					v-list-tile-title.title Navigation
+		v-divider
+		v-list
+			v-list-tile(to="/resultbot")
+				v-list-tile-title Result Bot
+			v-list-tile(to="/mappools")
+				v-list-tile-title Mappools
 	v-toolbar(app color="light-primary")
-		v-toolbar-side-icon(v-if="loggedIn")
 		v-toolbar-title o!SEAT 2
 		v-spacer
 		discord-profile(:profile="discordProfile" v-if="discordProfile.id")

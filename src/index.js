@@ -10,9 +10,11 @@ import 'vuetify/dist/vuetify.min.css'
 import App from './App.vue'
 import Home from './Home.vue'
 import DiscordLogin from './DiscordLogin.vue'
+import Mappools from './Mappools.vue'
 
 // Custom components
 import DiscordProfile from './DiscordProfile.vue'
+import BeatmapBig from './BeatmapBig.vue'
 
 // Other stuff
 import axios from 'axios'
@@ -29,6 +31,7 @@ Vue.use(Vuetify, {
 	theme: theme
 })
 Vue.component('discord-profile', DiscordProfile)
+Vue.component('beatmap-big', BeatmapBig)
 Vue.use(VueAxios, axios)
 Vue.use(Vuex)
 
@@ -38,7 +41,8 @@ const router = new VueRouter({
 	routes: [
 		{ path: '/', redirect: '/home' },
 		{ path: '/home', component: Home, name: 'Home' },
-		{ path: '/discordlogin', component: DiscordLogin, name: 'Discord Login' }
+		{ path: '/discordlogin', component: DiscordLogin, name: 'Discord Login' },
+		{ path: '/mappools', component: Mappools, name: 'Mappools' }
 	]
 })
 
@@ -47,21 +51,35 @@ const store = new Vuex.Store({
 		user: {
 			discord: { username: null, discriminator: null, id: null, avatar: null },
 			token: null
-		}
+		},
+		mappools: []
 	},
 	mutations: {
 		updateUser(state, payload) {
 			state.user.discord = payload.profile.discord
+		},
+		updateMappools(state, payload) {
+			state.mappools = payload.mappools
 		}
 	},
 	actions: {
 		init({ commit }) {
 			this.dispatch('updateUser')
+			this.dispatch('updateMappools')
 		},
 		updateUser({ commit }) {
 			axios.get('/api/user')
 			.then((response) => {
 				commit('updateUser', { profile: response.data })
+			})
+			.catch((err) => {
+				console.log(err)
+			})
+		},
+		updateMappools({ commit }) {
+			axios.get('/api/mappools')
+			.then((response) => {
+				commit('updateMappools', { mappools: response.data })
 			})
 			.catch((err) => {
 				console.log(err)
