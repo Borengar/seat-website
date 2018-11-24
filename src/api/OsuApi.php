@@ -105,6 +105,19 @@ class OsuApi {
 		return $response->beatmapsets;
 	}
 
+	function getMatch($matchId) {
+		$curl = curl_init();
+		curl_setopt_array($curl, array(
+			CURLOPT_SSL_VERIFYPEER => false,
+			CURLOPT_FOLLOWLOCATION => false,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_URL => 'https://osu.ppy.sh/community/matches/' . $matchId . '/history'
+		));
+		$response = json_decode(curl_exec($curl));
+		curl_close($curl);
+		return $response;
+	}
+
 }
 
 ?>

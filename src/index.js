@@ -11,6 +11,7 @@ import App from './App.vue'
 import Home from './Home.vue'
 import DiscordLogin from './DiscordLogin.vue'
 import Mappools from './Mappools.vue'
+import ResultBot from './ResultBot.vue'
 
 // Custom components
 import DiscordProfile from './DiscordProfile.vue'
@@ -42,7 +43,8 @@ const router = new VueRouter({
 		{ path: '/', redirect: '/home' },
 		{ path: '/home', component: Home, name: 'Home' },
 		{ path: '/discordlogin', component: DiscordLogin, name: 'Discord Login' },
-		{ path: '/mappools', component: Mappools, name: 'Mappools' }
+		{ path: '/mappools', component: Mappools, name: 'Mappools' },
+		{ path: '/resultbot', component: ResultBot, name: 'Result Bot' }
 	]
 })
 

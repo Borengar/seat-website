@@ -187,6 +187,15 @@ $app->get('/osubeatmapsetsearch/{query}', function($request, $response, $args) {
 	return $response->withJson($osuApi->searchBeatmapsets($args['query']));
 });
 
+$app->get('/osumatch/{id}', function($request, $response, $args) {
+	if (!$request->getAttribute('authenticated')) {
+		return $response->withStatus(401);
+	}
+
+	global $osuApi;
+	return $response->withJson($osuApi->getMatch($args['id']));
+});
+
 $app->run();
 
 ?>
