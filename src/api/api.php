@@ -144,6 +144,22 @@ $app->get('/mappools', function($request, $response) {
 	return $response->withJson($result);
 });
 
+$app->put('/mappools/{id}', function($request, $response, $args) {
+	if (!$request->getAttribute('authenticated')) {
+		return $response->withStatus(401);
+	}
+
+	$body = $request->getParsedBody();
+	$mongoClient = new MongoDB\Client;
+	$collection = $mongoClient->seat->mappools;
+	$collection->updateOne([ '_id' => new MongoDB\BSON\ObjectID($args['id']) ], [
+		'$set' => [
+			'name' => $body->name,
+			'slots' => $body->slots
+		]
+	]);
+});
+
 $app->get('/osubeatmap/{id}', function($request, $response, $args) {
 	if (!$request->getAttribute('authenticated')) {
 		return $response->withStatus(401);
