@@ -111,7 +111,7 @@ class OsuApi {
 			CURLOPT_SSL_VERIFYPEER => false,
 			CURLOPT_FOLLOWLOCATION => false,
 			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_URL => 'https://osu.ppy.sh/community/matches/' . $matchId . '/history'
+			CURLOPT_URL => 'https://osu.ppy.sh/community/matches/' . $matchId . '/history?after=0'
 		));
 		$response = json_decode(curl_exec($curl));
 		curl_close($curl);
