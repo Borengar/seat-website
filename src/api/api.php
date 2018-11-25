@@ -160,6 +160,16 @@ $app->put('/mappools/{id}', function($request, $response, $args) {
 	]);
 });
 
+$app->delete('/mappools/{id}', function($request, $response, $args) {
+	if (!$request->getAttribute('authenticated')) {
+		return $response->withStatus(401);
+	}
+
+	$mongoClient = new MongoDB\Client;
+	$collection = $mongoClient->seat->mappools;
+	$collection->deleteOne([ '_id' => new MongoDB\BSON\ObjectID($args['id']) ]);
+});
+
 $app->get('/osubeatmap/{id}', function($request, $response, $args) {
 	if (!$request->getAttribute('authenticated')) {
 		return $response->withStatus(401);

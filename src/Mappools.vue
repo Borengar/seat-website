@@ -120,7 +120,13 @@ export default {
 			})
 		},
 		deleteMappool() {
-
+			this.axios.delete('/api/mappools/' + this.mappool._id)
+			.then((result) => {
+				this.$store.dispatch('updateMappools')
+			})
+			.catch((err) => {
+				console.log(err)
+			})
 		},
 		saveMappool() {
 			this.axios.put('/api/mappools/' + this.mappool._id, {
@@ -128,7 +134,7 @@ export default {
 				slots: this.mappool.slots
 			})
 			.then((result) => {
-
+				this.selectedMappool = null
 			})
 			.catch((err) => {
 				console.log(err)
@@ -304,9 +310,17 @@ export default {
 	},
 	watch: {
 		selectedMappool(newMappool, oldMappool) {
-			this.mappool = this.mappools.find((mappool) => {
-				return mappool._id == newMappool
-			})
+			if (newMappool) {
+				this.mappool = this.mappools.find((mappool) => {
+					return mappool._id == newMappool
+				})
+			} else {
+				this.mappool = {
+					_id: null,
+					name: null,
+					slots: []
+				}
+			}
 		},
 		mods(newMods, oldMods) {
 			if (newMods.length) {
