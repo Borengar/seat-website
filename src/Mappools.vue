@@ -173,7 +173,7 @@ export default {
 							this.beatmapset = result.data
 						}
 						else {
-							this.axios.get('/api/osubeatmapsetsearch/' + this.beatmapQuery)
+							this.axios.get('/api/osubeatmapsetsearch/' + this.beatmapQuery.replace(/\s/g, '+'))
 							.then((result) => {
 								this.beatmapsets = result.data
 							})

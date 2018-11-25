@@ -95,7 +95,7 @@ class OsuApi {
 			CURLOPT_SSL_VERIFYPEER => false,
 			CURLOPT_FOLLOWLOCATION => false,
 			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_URL => 'https://osu.ppy.sh/api/v2/beatmapsets/search/?q=' . $query,
+			CURLOPT_URL => 'https://osu.ppy.sh/api/v2/beatmapsets/search/?q=' . str_replace(' ', '+', $query),
 			CURLOPT_HTTPHEADER => array(
 				'Authorization: Bearer ' . $this->apiKey
 			)
