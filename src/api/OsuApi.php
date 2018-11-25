@@ -106,16 +106,30 @@ class OsuApi {
 	}
 
 	function getMatch($matchId) {
-		$curl = curl_init();
-		curl_setopt_array($curl, array(
-			CURLOPT_SSL_VERIFYPEER => false,
-			CURLOPT_FOLLOWLOCATION => false,
-			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_URL => 'https://osu.ppy.sh/community/matches/' . $matchId . '/history?after=0'
-		));
-		$response = json_decode(curl_exec($curl));
-		curl_close($curl);
-		return $response;
+		$lastEvent = 0;
+		$lastEventFound = false;
+		$match = null;
+		while (!$lastEventFound) {
+			$curl = curl_init();
+			curl_setopt_array($curl, array(
+				CURLOPT_SSL_VERIFYPEER => false,
+				CURLOPT_FOLLOWLOCATION => false,
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_URL => 'https://osu.ppy.sh/community/matches/' . $matchId . '/history?after=' . $lastEvent
+			));
+			$response = json_decode(curl_exec($curl));
+			curl_close($curl);
+			if ($lastEvent == 0) {
+				$match = $response;
+			} else {
+				$match->events = array_merge($match->events, $response->events);
+			}
+			$lastEvent = $response->events[count($response->events) - 1]->id;
+			if ($response->latest_event_id == $response->events[count($response->events) - 1]->id) {
+				$lastEventFound = true;
+			}
+		}
+		return $match;
 	}
 
 }
