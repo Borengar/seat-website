@@ -50,6 +50,34 @@ v-layout(column)
 				v-btn(@click="choosePicks" color="success") Continue
 			v-stepper-content(step="5")
 				h1 Send Result
+				div(v-if="players.length >= 2")
+					div.mt-2
+						strong {{ players[0].username }} VS {{ players[1].username }}
+					div.mt-2
+						strong(v-if="players[0].score > players[1].score") {{ players[0].username }} wins with {{ players[0].score }}:{{ players[1].score }}
+					div.mt-2
+						strong(v-if="players[1].score > players[0].score") {{ players[1].username }} wins with {{ players[1].score }}:{{ players[0].score }}
+					div.mt-2
+						strong {{ players[0].username }} Bans
+					v-layout(row v-for="ban in playerBans(0)")
+						.ban-mod.mr-2 {{ ban.beatmap.mods.join('') }}
+						.ban-map {{ ban.beatmap.beatmap.beatmapset.title }}
+					div.mt-2
+						strong {{ players[1].username }} Bans
+					v-layout(row v-for="ban in playerBans(1)")
+						.ban-mod.mr-2 {{ ban.beatmap.mods.join('') }}
+						.ban-map {{ ban.beatmap.beatmap.beatmapset.title }}
+					div.mt-2
+						strong {{ players[0].username }} Picks
+					v-layout(row v-for="pick in playerPicks(0)")
+						.pick-mod.mr-2 {{ pick.mods.join('') }}
+						.pick-map {{ pick.game.beatmap.beatmapset.title }}
+					div.mt-2
+						strong {{ players[1].username }} Picks
+					v-layout(row v-for="pick in playerPicks(1)")
+						.pick-mod.mr-2 {{ pick.mods.join('') }}
+						.pick-map {{ pick.game.beatmap.beatmapset.title }}
+				v-btn(@click="sendResult" color="success"  :disabled="sendDisabled") Send
 </template>
 
 <script>
@@ -72,7 +100,8 @@ export default {
 		},
 		players: [],
 		bans: [],
-		games: []
+		games: [],
+		sendDisabled: false
 	}),
 	methods: {
 		searchMatch() {
@@ -98,6 +127,9 @@ export default {
 		},
 		choosePlayers() {
 			this.players = this.match.users.filter(user => user.isPlayer == true)
+			for (let i = 0; i < this.players.length; i++) {
+				this.players[i].score = 0
+			}
 			this.step = 3
 		},
 		addBan() {
@@ -123,6 +155,24 @@ export default {
 			for (let i = this.games.length - 1; i >= 0; i--) {
 				if (!this.games[i].counts || this.games[i].pickedBy == null)
 					this.games.splice(i, 1)
+				else {
+					let score0 = this.games[i].game.scores.find(score => score.user_id == this.players[0].id)
+					let score1 = this.games[i].game.scores.find(score => score.user_id == this.players[1].id)
+					if (score0 == null) {
+						this.players[1].score++
+					} else if (score1 == null) {
+						this.players[0].score++
+					} else if (score0.score > score1.score) {
+						this.players[0].score++
+					}
+					else {
+						this.players[1].score++
+					}
+					this.games[i].mods = this.mappool.slots.find(slot => slot.beatmap.id == this.games[i].game.beatmap.id).mods
+					if (this.games[i].mods.length == 0) {
+						this.games[i].mods.push('Nomod')
+					}
+				}
 			}
 			this.step = 5
 		},
@@ -140,6 +190,52 @@ export default {
 				return 0
 			})
 			return modsCopy
+		},
+		playerBans(player) {
+			return this.bans.filter(ban => ban.player.id == this.players[player].id)
+		},
+		playerPicks(player) {
+			return this.games.filter(game => game.pickedBy == this.players[player].id)
+		},
+		sendResult() {
+			this.sendDisabled = true
+			let embed = {
+				username: 'Result Bot',
+				avatar_url: 'https://cdn.discordapp.com/attachments/503559550855675904/506108924722675754/bot.png',
+				embeds: [{
+					color: 16711680,
+					author: {
+						name: this.players[0].username + '  ' + this.players[0].score + ':' + this.players[1].score + '  ' + this.players[1].username,
+						icon_url: 'https://images-ext-2.discordapp.net/external/zJZT3pGPZl6avCRuQOOnL1_1vktR3ZiN5KZTKKRmAvk/https/cdn0.iconfinder.com/data/icons/fighting-1/258/brawl003-512.png'
+					},
+					description: 'https://osu.ppy.sh/community/matches/' + this.matchId,
+					fields: [
+						{
+							name: this.players[0].username + ' Bans',
+							value: this.playerBans(0).map(ban => '__' + ban.beatmap.mods.join('') + '__ ' + ban.beatmap.beatmap.beatmapset.artist + ' - ' + ban.beatmap.beatmap.beatmapset.title + ' [' + ban.beatmap.beatmap.version + ']').join('\n')
+						},
+						{
+							name: this.players[1].username + ' Bans',
+							value: this.playerBans(1).map(ban => '__' + ban.beatmap.mods.join('') + '__ ' + ban.beatmap.beatmap.beatmapset.artist + ' - ' + ban.beatmap.beatmap.beatmapset.title + ' [' + ban.beatmap.beatmap.version + ']').join('\n')
+						},
+						{
+							name: this.players[0].username + ' Picks',
+							value: this.playerPicks(0).map(pick => '__' + pick.mods.join('') + '__ ' + pick.game.beatmap.beatmapset.artist + ' - ' + pick.game.beatmap.beatmapset.title + ' [' + pick.game.beatmap.version + ']').join('\n')
+						},
+						{
+							name: this.players[1].username + ' Picks',
+							value: this.playerPicks(1).map(pick => '__' + pick.mods.join('') + '__ ' + pick.game.beatmap.beatmapset.artist + ' - ' + pick.game.beatmap.beatmapset.title + ' [' + pick.game.beatmap.version + ']').join('\n')
+						}
+					]
+				}]
+			}
+			this.axios.post('/api/resultmessage', { embed: embed })
+			.then((result) => {
+				console.log(result)
+			})
+			.catch((err) => {
+				console.log(err)
+			})
 		}
 	},
 	computed: {
@@ -180,4 +276,6 @@ export default {
 	max-width 800px
 .pick-counts
 	max-width 500px
+.ban-mod, .pick-mod
+	text-decoration underline
 </style>

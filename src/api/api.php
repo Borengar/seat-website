@@ -206,6 +206,16 @@ $app->get('/osumatch/{id}', function($request, $response, $args) {
 	return $response->withJson($osuApi->getMatch($args['id']));
 });
 
+$app->post('/resultmessage', function($request, $response) {
+	if (!$request->getAttribute('authenticated')) {
+		return $response->withStatus(401);
+	}
+
+	$body = $request->getParsedBody();
+	global $discordApi;
+	$discordApi->sendMatchResult($body->embed);
+});
+
 $app->run();
 
 ?>

@@ -161,91 +161,7 @@ class DiscordApi {
 		return $response;
 	}
 
-	public function sendMatchResult($lobbyId, $matchId, $result, $roundName, $tierName, $bans, $mappool) {
-		$messageObject = new stdClass;
-		$messageObject->username = "RekindlingBot";
-		$messageObject->avatar_url = "https://cdn.discordapp.com/app-icons/442726345869492254/4c5e5e08533eb9df9ba9c479b3ae23ce.png";
-		$messageObject->embeds = [];
-		$embed = new stdClass;
-		$embed->color = 16711680;
-		$embed->author = new stdClass;
-		$embed->author->name = "Lobby " . $lobbyId . " (" . $roundName . " | " . $tierName . ")";
-		$embed->author->icon_url = "https://images-ext-2.discordapp.net/external/zJZT3pGPZl6avCRuQOOnL1_1vktR3ZiN5KZTKKRmAvk/https/cdn0.iconfinder.com/data/icons/fighting-1/258/brawl003-512.png";
-		$embed->description = "https://osu.ppy.sh/community/matches/" . $matchId;
-		$embed->fields = [];
-		$playerList = new stdClass;
-		$playerList->name = "Player";
-		$playerList->inline = true;
-		$playerList->value = [];
-		$scoreList = new stdClass;
-		$scoreList->name = "Score";
-		$scoreList->inline = true;
-		$scoreList->value = [];
-		if (isset($result[0]->score)) {
-			foreach ($result as $score) {
-				if ($score->osu && $score->osu->username) {
-					$playerList->value[] = $score->osu->username;
-					$scoreList->value[] = $score->score;
-				}
-			}
-		} else {
-			foreach ($result as $score) {
-				if ($score->continue == "Continue") {
-					$playerList->value[] = $score->osu->username;
-					$scoreList->value[] = "🏆";
-				}
-			}
-			foreach ($result as $score) {
-				if ($score->continue != "Continue") {
-					$playerList->value[] = $score->osu->username;
-					$scoreList->value[] = "Forfeit";
-				}
-			}
-		}
-		$playerList->value = join($playerList->value, "\n");
-		$scoreList->value = join($scoreList->value, "\n");
-		$embed->fields[] = $playerList;
-		$embed->fields[] = $scoreList;
-
-		if (count($result) == 2 && count($bans) > 0) {
-			$banList = new stdClass;
-			$banList->name = "Bans " . $result[0]->osu->username;
-			$banList->inline = false;
-			$banList->value = [];
-			foreach ($bans as $ban) {
-				if ($ban->bannedBy == $result[0]->userId) {
-					foreach ($mappool as $beatmap) {
-						if ($beatmap->beatmapId == $ban->beatmapId) {
-							$banList->value[] = "__" . $beatmap->mod . "__ **" . $beatmap->artist . " - " . $beatmap->title . " [" . $beatmap->version . "]**";
-						}
-					}
-				}
-			}
-			if (count($banList->value) > 0) {
-				$banList->value = join($banList->value, "\n");
-				$embed->fields[] = $banList;
-			}
-			$banList2 = new stdClass;
-			$banList2->name = "Bans " . $result[1]->osu->username;
-			$banList2->inline = false;
-			$banList2->value = [];
-			foreach ($bans as $ban) {
-				if ($ban->bannedBy == $result[1]->userId) {
-					foreach ($mappool as $beatmap) {
-						if ($beatmap->beatmapId == $ban->beatmapId) {
-							$banList2->value[] = "__" . $beatmap->mod . "__ **" . $beatmap->artist . " - " . $beatmap->title . " [" . $beatmap->version . "]**";
-						}
-					}
-				}
-			}
-			if (count($banList2->value) > 0) {
-				$banList2->value = join($banList2->value, "\n");
-				$embed->fields[] = $banList2;
-			}
-		}
-
-		$messageObject->embeds[] = $embed;
-
+	public function sendMatchResult($embed) {
 		$curl = curl_init();
 		curl_setopt_array($curl, array(
 			CURLOPT_SSL_VERIFYPEER => false,
@@ -253,7 +169,7 @@ class DiscordApi {
 			CURLOPT_RETURNTRANSFER => true,
 			CURLOPT_CUSTOMREQUEST => 'POST',
 			CURLOPT_URL => $this->webhook,
-			CURLOPT_POSTFIELDS => json_encode($messageObject)
+			CURLOPT_POSTFIELDS => json_encode($embed)
 			)
 		);
 		$response = json_decode(curl_exec($curl));
