@@ -70,7 +70,7 @@ $app->post('/discordlogin', function($request, $response) {
 
 	$collection = $mongoClient->seat->users;
 	while (true) {
-		$token = random_int(PHP_INT_MIN, PHP_INT_MAX);
+		$token = random_int(1000000, 9999999);
 		$result = $collection->find([ 'token' => $token ])->toArray();
 		if (count($result) == 0) {
 			break;
