@@ -16,7 +16,7 @@ export default {
 	},
 	methods: {
 		login() {
-			window.open('https://discordapp.com/oauth2/authorize?client_id=506094673463345182&scope=identify&redirect_uri=' + encodeURI('http://localhost/discordlogin') + '&response_type=token', '_self')
+			window.open('https://discordapp.com/oauth2/authorize?client_id=506094673463345182&scope=identify&redirect_uri=' + encodeURI(location.origin + '/discordlogin') + '&response_type=token', '_self')
 		}
 	}
 }
