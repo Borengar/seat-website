@@ -19,7 +19,9 @@ v-layout(column)
 				v-btn(@click="searchMatch" color="success"  :disabled="searchDisabled") Continue
 			v-stepper-content(step="2")
 				h1 Choose 2 players
-				v-checkbox(v-for="user in match.users"  :key="user.id"  v-model="user.isPlayer"  :label="user.username")
+				v-layout(row v-for="user in match.users"  :key="user.id")
+					v-checkbox.mr-2.player-checkbox(v-model="user.isPlayer"  :label="user.username")
+					v-checkbox(v-model="user.isRollWinner" label="Roll winner"  :disabled="!user.isPlayer")
 				v-btn(@click="choosePlayers" color="success"  :disabled="choosePlayersDisabled") Continue
 			v-stepper-content(step="3")
 				h1 Bans
@@ -46,17 +48,25 @@ v-layout(column)
 				h1 Picks
 				v-layout(row v-for="game in games"  :key="game.id")
 					v-checkbox.mr-2.pick-counts(v-model="game.counts"  :label="game.game.beatmap.beatmapset.title")
-					v-select.player-select(label="Picked by" v-model="game.pickedBy"  :items="players" item-text="username"  item-value="id"  :disabled="!game.counts")
+					v-select.mr-2.player-select(label="Picked by" v-model="game.pickedBy"  :items="players" item-text="username"  item-value="id"  :disabled="!game.counts")
+					v-checkbox.pick-counts(v-model="game.isTiebreaker" label="Tiebreaker")
 				v-btn(@click="choosePicks" color="success") Continue
 			v-stepper-content(step="5")
 				h1 Send Result
 				div(v-if="players.length >= 2")
+					v-text-field.match-id(label="Title" v-model="title")
 					div.mt-2
-						strong {{ players[0].username }} VS {{ players[1].username }}
+						strong {{ title }}: Match {{ matchId }}
+					div.mt-2(v-if="players[0].score > players[1].score")
+						strong {{ players[0].username }} {{ players[0].score }}
+						span  | {{ players[1].score }} {{ players[1].username }}
+					div.mt-2(v-if="players[0].score < players[1].score")
+						span {{ players[0].username }} {{ players[0].score }} |
+						strong  {{ players[1].score }} {{ players[1].username }}
 					div.mt-2
-						strong(v-if="players[0].score > players[1].score") {{ players[0].username }} wins with {{ players[0].score }}:{{ players[1].score }}
+						div https://osu.ppy.sh/community/matches/{{ matchId }}
 					div.mt-2
-						strong(v-if="players[1].score > players[0].score") {{ players[1].username }} wins with {{ players[1].score }}:{{ players[0].score }}
+						div Winner of roll: {{ rollWinner.username }}
 					div.mt-2
 						strong {{ players[0].username }} Bans
 					v-layout(row v-for="ban in playerBans(0)")
@@ -75,6 +85,11 @@ v-layout(column)
 					div.mt-2
 						strong {{ players[1].username }} Picks
 					v-layout(row v-for="pick in playerPicks(1)")
+						.pick-mod.mr-2 {{ pick.mods.join('') }}
+						.pick-map {{ pick.game.beatmap.beatmapset.title }}
+					div.mt-2(v-if="tiebreakers.length > 0")
+						strong Tiebreakers
+					v-layout(row v-for="pick in tiebreakers")
 						.pick-mod.mr-2 {{ pick.mods.join('') }}
 						.pick-map {{ pick.game.beatmap.beatmapset.title }}
 				v-btn(@click="sendResult" color="success"  :disabled="sendDisabled") Send
@@ -101,7 +116,8 @@ export default {
 		players: [],
 		bans: [],
 		games: [],
-		sendDisabled: false
+		sendDisabled: false,
+		title: null
 	}),
 	methods: {
 		searchMatch() {
@@ -117,6 +133,7 @@ export default {
 				}
 				for (let i = 0; i < match.users.length; i++) {
 					match.users[i].isPlayer = false
+					match.users[i].isRollWinner = false
 				}
 				this.match = match
 				this.step = 2
@@ -137,6 +154,9 @@ export default {
 				player: this.players.find(player => player.id == this.selectedPlayer),
 				beatmap: this.mappool.slots.find(slot => slot.beatmap.id == this.selectedBeatmap)
 			})
+			if (this.bans[this.bans.length - 1].beatmap.mods.length == 0) {
+				this.bans[this.bans.length - 1].beatmap.mods.push('Nomod')
+			}
 			this.selectedPlayer = null
 			this.selectedBeatmap = null
 		},
@@ -148,12 +168,13 @@ export default {
 			this.games = this.match.events
 			for (let i = 0; i < this.games.length; i++) {
 				this.games[i].pickedBy = null
+				this.games[i].isTiebreaker = false
 			}
 			this.step = 4
 		},
 		choosePicks() {
 			for (let i = this.games.length - 1; i >= 0; i--) {
-				if (!this.games[i].counts || this.games[i].pickedBy == null)
+				if ((!this.games[i].counts || this.games[i].pickedBy == null) && !this.games[i].isTiebreaker)
 					this.games.splice(i, 1)
 				else {
 					let score0 = this.games[i].game.scores.find(score => score.user_id == this.players[0].id)
@@ -195,20 +216,29 @@ export default {
 			return this.bans.filter(ban => ban.player.id == this.players[player].id)
 		},
 		playerPicks(player) {
-			return this.games.filter(game => game.pickedBy == this.players[player].id)
+			return this.games.filter(game => game.pickedBy == this.players[player].id && !game.isTiebreaker)
 		},
 		sendResult() {
 			this.sendDisabled = true
+			let description = '\nhttps://osu.ppy.sh/community/matches/' + this.matchId
+			if (this.players[0].score > this.players[1].score) {
+				description = '**' + this.players[0].username + ' ' + this.players[0].score + '** | ' + this.players[1].score + ' ' + this.players[1].username + description
+			} else {
+				description = this.players[0].username + ' ' + this.players[0].score + ' | **' + this.players[1].score + ' ' + this.players[1].username + '**' + description
+			}
+			if (this.rollWinner) {
+				description = description + '\nWinner of roll: ' + this.rollWinner.username
+			}
 			let embed = {
 				username: 'Result Bot',
 				avatar_url: 'https://cdn.discordapp.com/attachments/503559550855675904/506108924722675754/bot.png',
 				embeds: [{
 					color: 16711680,
 					author: {
-						name: this.players[0].username + '  ' + this.players[0].score + ':' + this.players[1].score + '  ' + this.players[1].username,
+						name: this.title + ': Match ' + this.matchId,
 						icon_url: 'https://images-ext-2.discordapp.net/external/zJZT3pGPZl6avCRuQOOnL1_1vktR3ZiN5KZTKKRmAvk/https/cdn0.iconfinder.com/data/icons/fighting-1/258/brawl003-512.png'
 					},
-					description: 'https://osu.ppy.sh/community/matches/' + this.matchId,
+					description: description,
 					fields: [
 						{
 							name: this.players[0].username + ' Bans',
@@ -228,6 +258,12 @@ export default {
 						}
 					]
 				}]
+			}
+			if (this.tiebreakers.length > 0) {
+				embed.embeds[0].fields.push({
+					name: '**TB map**',
+					value: this.tiebreakers.map(pick => '__' + pick.mods.join('') + '__ ' + pick.game.beatmap.beatmapset.artist + ' - ' + pick.game.beatmap.beatmapset.title + ' [' + pick.game.beatmap.version + ']').join('\n')
+				})
 			}
 			this.axios.post('/api/resultmessage', { embed: embed })
 			.then((result) => {
@@ -252,6 +288,12 @@ export default {
 			if (this.selectedPlayer == null || this.selectedBeatmap == null)
 				return true
 			return this.bans.some(ban => ban.beatmap.beatmap.id == this.selectedBeatmap)
+		},
+		tiebreakers() {
+			return this.games.filter(game => game.isTiebreaker)
+		},
+		rollWinner() {
+			return this.players.find(player => player.isRollWinner)
 		}
 	},
 	watch: {
@@ -266,6 +308,8 @@ export default {
 
 <style lang="stylus" scoped>
 .mappool-select, .beatmap-select, .player-select
+	max-width 300px
+.player-checkbox
 	max-width 300px
 .match-id
 	max-width 300px
