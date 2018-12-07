@@ -160,9 +160,9 @@ export default {
 			this.games = this.match.events
 			let nextPicker = this.players.indexOf(this.rollWinner)
 			for (let i = 0; i < this.games.length; i++) {
-				this.games[i].pickedBy = this.players[nextPicker].id
+				this.$set(this.games[i], 'pickedBy', this.players[nextPicker].id)
 				nextPicker = nextPicker ? 0 : 1
-				this.games[i].isTiebreaker = false
+				this.$set(this.games[i], 'isTiebreaker', false)
 			}
 			this.step = 4
 		},
