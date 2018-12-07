@@ -32,13 +32,13 @@ v-layout(column)
 				v-data-table.ban-table(:items="bans" item-key="beatmap.beatmap.id" hide-actions)
 					template(slot="headers" slot-scope="props")
 						tr
-							th(align="left" style="width:50px") Mods
+							th(align="left" style="width:50px") Mod
 							th(align="left") Beatmap
 							th(align="left") Player
 							th(align="right") Actions
 					template(slot="items" slot-scope="props")
 						tr
-							td.text-xs-left {{ sortMods(props.item.beatmap.mods).join('') }}
+							td.text-xs-left {{ props.item.beatmap.mod }}
 							td.text-xs-left {{ props.item.beatmap.beatmap.beatmapset.title }}
 							td.text-xs-left {{ props.item.player.username }}
 							td.text-xs-right
@@ -56,7 +56,7 @@ v-layout(column)
 				div(v-if="players.length >= 2")
 					v-text-field.match-id(label="Title" v-model="title")
 					div.mt-2
-						strong {{ title }}: Match {{ matchId }}
+						strong {{ title }}
 					div.mt-2(v-if="players[0].score > players[1].score")
 						strong {{ players[0].username }} {{ players[0].score }}
 						span  | {{ players[1].score }} {{ players[1].username }}
@@ -68,30 +68,25 @@ v-layout(column)
 					div.mt-2
 						div Winner of roll: {{ rollWinner.username }}
 					div.mt-2
-						strong {{ players[0].username }} Bans
-					v-layout(row v-for="ban in playerBans(0)")
-						.ban-mod.mr-2 {{ ban.beatmap.mods.join('') }}
-						.ban-map {{ ban.beatmap.beatmap.beatmapset.title }}
+						strong Bans
+					v-layout(row)
+						.underline.mr-2 {{ players[0].username }}:
+						.ban-mod {{ playerBans(0).map(ban => getModNumber(ban.beatmap.beatmap.id)).join('/') }}
+					v-layout(row)
+						.underline.mr-2 {{ players[1].username }}:
+						.ban-mod {{ playerBans(1).map(ban => getModNumber(ban.beatmap.beatmap.id)).join('/') }}
 					div.mt-2
-						strong {{ players[1].username }} Bans
-					v-layout(row v-for="ban in playerBans(1)")
-						.ban-mod.mr-2 {{ ban.beatmap.mods.join('') }}
-						.ban-map {{ ban.beatmap.beatmap.beatmapset.title }}
-					div.mt-2
-						strong {{ players[0].username }} Picks
-					v-layout(row v-for="pick in playerPicks(0)")
-						.pick-mod.mr-2 {{ pick.mods.join('') }}
-						.pick-map {{ pick.game.beatmap.beatmapset.title }}
-					div.mt-2
-						strong {{ players[1].username }} Picks
-					v-layout(row v-for="pick in playerPicks(1)")
-						.pick-mod.mr-2 {{ pick.mods.join('') }}
-						.pick-map {{ pick.game.beatmap.beatmapset.title }}
+						strong Picks
+					v-layout(row)
+						.underline.mr-2 {{ players[0].username }}:
+						.pick-mod {{ playerPicks(0).map(pick => getModNumber(pick.game.beatmap.id)).join('/') }}
+					v-layout(row)
+						.underline.mr-2 {{ players[1].username }}:
+						.pick-mod {{ playerPicks(1).map(pick => getModNumber(pick.game.beatmap.id)).join('/') }}
 					div.mt-2(v-if="tiebreakers.length > 0")
 						strong Tiebreakers
 					v-layout(row v-for="pick in tiebreakers")
-						.pick-mod.mr-2 {{ pick.mods.join('') }}
-						.pick-map {{ pick.game.beatmap.beatmapset.title }}
+						.pick-mod {{ tiebreakers.map(pick => getModNumber(pick.game.beatmap.id)).join('/') }}
 				v-btn(@click="sendResult" color="success"  :disabled="sendDisabled") Send
 </template>
 
@@ -154,9 +149,6 @@ export default {
 				player: this.players.find(player => player.id == this.selectedPlayer),
 				beatmap: this.mappool.slots.find(slot => slot.beatmap.id == this.selectedBeatmap)
 			})
-			if (this.bans[this.bans.length - 1].beatmap.mods.length == 0) {
-				this.bans[this.bans.length - 1].beatmap.mods.push('Nomod')
-			}
 			this.selectedPlayer = null
 			this.selectedBeatmap = null
 		},
@@ -166,8 +158,10 @@ export default {
 		},
 		chooseBans() {
 			this.games = this.match.events
+			let nextPicker = this.players.indexOf(this.rollWinner)
 			for (let i = 0; i < this.games.length; i++) {
-				this.games[i].pickedBy = null
+				this.games[i].pickedBy = this.players[nextPicker].id
+				nextPicker = nextPicker ? 0 : 1
 				this.games[i].isTiebreaker = false
 			}
 			this.step = 4
@@ -189,28 +183,10 @@ export default {
 					else {
 						this.players[1].score++
 					}
-					this.games[i].mods = this.mappool.slots.find(slot => slot.beatmap.id == this.games[i].game.beatmap.id).mods
-					if (this.games[i].mods.length == 0) {
-						this.games[i].mods.push('Nomod')
-					}
+					this.games[i].mod = this.mappool.slots.find(slot => slot.beatmap.id == this.games[i].game.beatmap.id).mod
 				}
 			}
 			this.step = 5
-		},
-		sortMods(mods) {
-			var modsCopy = mods.slice()
-			modsCopy.sort(function(a, b) {
-				if (a == 'HD')
-					return -1
-				if (a == 'DT')
-					return 1
-				if (b == 'HD')
-					return 1
-				if (b == 'DT')
-					return -1
-				return 0
-			})
-			return modsCopy
 		},
 		playerBans(player) {
 			return this.bans.filter(ban => ban.player.id == this.players[player].id)
@@ -220,14 +196,14 @@ export default {
 		},
 		sendResult() {
 			this.sendDisabled = true
-			let description = '\nhttps://osu.ppy.sh/community/matches/' + this.matchId
+			let description = '\n\n<https://osu.ppy.sh/community/matches/' + this.matchId + '>'
 			if (this.players[0].score > this.players[1].score) {
 				description = '**' + this.players[0].username + ' ' + this.players[0].score + '** | ' + this.players[1].score + ' ' + this.players[1].username + description
 			} else {
 				description = this.players[0].username + ' ' + this.players[0].score + ' | **' + this.players[1].score + ' ' + this.players[1].username + '**' + description
 			}
 			if (this.rollWinner) {
-				description = description + '\nWinner of roll: ' + this.rollWinner.username
+				description = description + '\n\nWinner of roll: ' + this.rollWinner.username
 			}
 			let embed = {
 				username: 'Result Bot',
@@ -235,34 +211,26 @@ export default {
 				embeds: [{
 					color: 16711680,
 					author: {
-						name: this.title + ': Match ' + this.matchId,
+						name: this.title,
 						icon_url: 'https://images-ext-2.discordapp.net/external/zJZT3pGPZl6avCRuQOOnL1_1vktR3ZiN5KZTKKRmAvk/https/cdn0.iconfinder.com/data/icons/fighting-1/258/brawl003-512.png'
 					},
 					description: description,
 					fields: [
 						{
-							name: this.players[0].username + ' Bans',
-							value: this.playerBans(0).map(ban => '__' + ban.beatmap.mods.join('') + '__ ' + ban.beatmap.beatmap.beatmapset.artist + ' - ' + ban.beatmap.beatmap.beatmapset.title + ' [' + ban.beatmap.beatmap.version + ']').join('\n')
+							name: 'Bans',
+							value: '__' + this.players[0].username + '__ ' + this.playerBans(0).map(ban => this.getModNumber(ban.beatmap.beatmap.id)).join('/') + '\n' + '__' + this.players[1].username + '__ ' + this.playerBans(1).map(ban => this.getModNumber(ban.beatmap.beatmap.id)).join('/')
 						},
 						{
-							name: this.players[1].username + ' Bans',
-							value: this.playerBans(1).map(ban => '__' + ban.beatmap.mods.join('') + '__ ' + ban.beatmap.beatmap.beatmapset.artist + ' - ' + ban.beatmap.beatmap.beatmapset.title + ' [' + ban.beatmap.beatmap.version + ']').join('\n')
-						},
-						{
-							name: this.players[0].username + ' Picks',
-							value: this.playerPicks(0).map(pick => '__' + pick.mods.join('') + '__ ' + pick.game.beatmap.beatmapset.artist + ' - ' + pick.game.beatmap.beatmapset.title + ' [' + pick.game.beatmap.version + ']').join('\n')
-						},
-						{
-							name: this.players[1].username + ' Picks',
-							value: this.playerPicks(1).map(pick => '__' + pick.mods.join('') + '__ ' + pick.game.beatmap.beatmapset.artist + ' - ' + pick.game.beatmap.beatmapset.title + ' [' + pick.game.beatmap.version + ']').join('\n')
+							name: 'Picks',
+							value: '__' + this.players[0].username + '__ ' + this.playerPicks(0).map(pick => this.getModNumber(pick.game.beatmap.id)).join('/') + '\n' + '__' + this.players[1].username + '__ ' + this.playerPicks(1).map(pick => this.getModNumber(pick.game.beatmap.id)).join('/')
 						}
 					]
 				}]
 			}
 			if (this.tiebreakers.length > 0) {
 				embed.embeds[0].fields.push({
-					name: '**TB map**',
-					value: this.tiebreakers.map(pick => '__' + pick.mods.join('') + '__ ' + pick.game.beatmap.beatmapset.artist + ' - ' + pick.game.beatmap.beatmapset.title + ' [' + pick.game.beatmap.version + ']').join('\n')
+					name: 'TB map',
+					value: this.tiebreakers.map(pick => this.getModNumber(pick.game.beatmap.id)).join('/')
 				})
 			}
 			this.axios.post('/api/resultmessage', { embed: embed })
@@ -272,6 +240,25 @@ export default {
 			.catch((err) => {
 				console.log(err)
 			})
+		},
+		banSelectText(beatmap) {
+			return beatmap.mod + ' ' + beatmap.beatmapset.title
+		},
+		getModNumber(beatmapId) {
+			let modNumber = 0
+			let lastMod = 'NM'
+			for (let i = 0; i < this.mappool.slots.length; i++) {
+				if (this.mappool.slots[i].mod != lastMod) {
+					lastMod = this.mappool.slots[i].mod
+					modNumber = 1
+				} else {
+					modNumber++
+				}
+				if (this.mappool.slots[i].beatmap.id == beatmapId) {
+					break
+				}
+			}
+			return lastMod + modNumber
 		}
 	},
 	computed: {
@@ -320,6 +307,6 @@ export default {
 	max-width 800px
 .pick-counts
 	max-width 500px
-.ban-mod, .pick-mod
+.underline
 	text-decoration underline
 </style>
