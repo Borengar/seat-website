@@ -32,7 +32,8 @@ class OsuApi {
 					'password' => $this->password,
 					'grant_type' => 'password',
 					'client_id' => '5',
-					'client_secret' => $this->clientSecret
+					'client_secret' => $this->clientSecret,
+					'scope' => '*'
 				))
 			));
 			$response = json_decode(curl_exec($curl));
