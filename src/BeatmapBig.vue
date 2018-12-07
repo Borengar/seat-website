@@ -32,7 +32,7 @@
 		img.download(src="./images/download.png")
 	a(:href="directLink")
 		img.direct(src="./images/direct.png")
-	img.mod(v-for="(mod, index) in mods"  :style="modLeft(index)"  :src="modImage(mod)")
+	img.mod(:src="modImage(mod)")
 </template>
 
 <script>
@@ -40,7 +40,7 @@ export default {
 	name: 'BeatmapBig',
 	props: {
 		beatmap: Object,
-		mods: Array
+		mod: String
 	},
 	computed: {
 		background() {
@@ -59,9 +59,6 @@ export default {
 		}
 	},
 	methods: {
-		modLeft(index) {
-			return { 'left': (30 + index * 40) + 'px' }
-		},
 		modImage(mod) {
 			return require('./images/mod-' + mod + '.png')
 		}
@@ -188,4 +185,5 @@ export default {
 	top 150px
 	width 90px
 	height 87px
+	left 30px
 </style>

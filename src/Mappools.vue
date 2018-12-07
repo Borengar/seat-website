@@ -15,12 +15,12 @@ v-layout(column)
 					v-data-table.elevation-1(:items="mappool.slots" item-key="beatmap.id" hide-actions)
 						template(slot="headers" slot-scope="props")
 							tr
-								th(align="left") Mods
+								th(align="left") Mod
 								th(align="left") Beatmap
 								th(align="right") Actions
 						template(slot="items" slot-scope="props")
 							tr
-								td.text-xs-left {{ sortMods(props.item.mods).join('') }}
+								td.text-xs-left {{ props.item.mod }}
 								td.text-xs-left {{ props.item.beatmap.beatmapset.title }}
 								td.text-xs-right.horizontal
 									v-icon.mr-2(small @click="moveUp(props.item)"  :disabled="addVisible || bulkAddVisible || editVisible") keyboard_arrow_up
@@ -39,13 +39,14 @@ v-layout(column)
 							v-text-field(label="Beatmap ID" v-model="beatmapQuery" @keyup.enter="searchBeatmap")
 							v-btn(@click="searchBeatmap" color="success") Search
 					div(v-if="beatmap")
-						beatmap-big(:beatmap="beatmap"  :mods="sortMods(mods)")
-						v-layout(row)
-							v-checkbox(v-model="mods" label="HD" value="HD")
-							v-checkbox(v-model="mods" label="HR" value="HR")
-							v-checkbox(v-model="mods" label="DT" value="DT")
-							v-checkbox(v-model="mods" label="Freemod" value="Freemod")
-							v-checkbox(v-model="mods" label="Tiebreaker" value="Tiebreaker")
+						beatmap-big(:beatmap="beatmap"  :mod="mod")
+						v-radio-group(v-model="mod" row)
+							v-radio(label="Nomod" value="NM")
+							v-radio(label="HD" value="HD")
+							v-radio(label="HR" value="HR")
+							v-radio(label="DT" value="DT")
+							v-radio(label="Freemod" value="FM")
+							v-radio(label="Tiebreaker" value="TB")
 					div(v-if="beatmapset")
 						h3 Please choose a difficulty.
 						v-radio-group(v-model="difficulty")
@@ -67,13 +68,14 @@ v-layout(column)
 						v-btn(@click="startBulkAdd" color="success") Start
 				v-layout(column v-if="editVisible")
 					h2 Edit beatmap
-					beatmap-big(:beatmap="beatmap"  :mods="sortMods(mods)")
-					v-layout(row)
-						v-checkbox(v-model="mods" label="HD" value="HD")
-						v-checkbox(v-model="mods" label="HR" value="HR")
-						v-checkbox(v-model="mods" label="DT" value="DT")
-						v-checkbox(v-model="mods" label="Freemod" value="Freemod")
-						v-checkbox(v-model="mods" label="Tiebreaker" value="Tiebreaker")
+					beatmap-big(:beatmap="beatmap"  :mod="mod")
+					v-radio-group(v-model="mod" row)
+						v-radio(label="Nomod" value="NM")
+						v-radio(label="HD" value="HD")
+						v-radio(label="HR" value="HR")
+						v-radio(label="DT" value="DT")
+						v-radio(label="Freemod" value="FM")
+						v-radio(label="Tiebreaker" value="TB")
 					v-layout(row)
 						v-btn(@click="cancel") Cancel
 						v-btn(@click="saveBeatmap" v-if="beatmap" color="success") Save
@@ -95,7 +97,7 @@ export default {
 		beatmapQuery: null,
 		bulkQueue: [],
 		beatmap: null,
-		mods: [],
+		mod: null,
 		beatmapset: null,
 		beatmapsets: [],
 		difficulty: null,
@@ -146,7 +148,7 @@ export default {
 			this.beatmapset = null
 			this.difficulty = null
 			this.beatmapsets = []
-			this.mods = []
+			this.mod = 'NM'
 			this.addVisible = true
 			this.bulkAddVisible = false
 			this.editVisible = false
@@ -157,7 +159,7 @@ export default {
 		},
 		editSlot(slot) {
 			this.beatmap = slot.beatmap
-			this.mods = slot.mods.slice()
+			this.mod = slot.mod
 			this.addVisible = false
 			this.bulkAddVisible = false
 			this.editVisible = true
@@ -197,19 +199,6 @@ export default {
 				console.log(err)
 			})
 		},
-		removeMods(mods, modsToRemove) {
-			let modsChanged = false
-			let modsCopy = mods.slice()
-			for (let i = 0; i < modsToRemove.length; i++) {
-				let index = modsCopy.indexOf(modsToRemove[i])
-				if (index > -1) {
-					modsCopy.splice(index, 1)
-					modsChanged = true
-				}
-			}
-			if (modsChanged)
-				this.mods = modsCopy
-		},
 		cancel() {
 			this.addVisible = false
 			this.bulkAddVisible = false
@@ -218,7 +207,7 @@ export default {
 		addBeatmap() {
 			this.mappool.slots.push({
 				beatmap: this.beatmap,
-				mods: this.mods
+				mod: this.mod
 			})
 			this.addVisible = false
 		},
@@ -250,15 +239,15 @@ export default {
 				this.axios.get('/api/osubeatmap/' + beatmapId)
 				.then((result) => {
 					if (result.data) {
-						var mods = []
-						if (counter >= 6 && counter <= 7) mods = [ 'HD' ]
-						if (counter >= 8 && counter <= 9) mods = [ 'HR' ]
-						if (counter >= 10 && counter <= 11) mods = [ 'DT' ]
-						if (counter >= 12 && counter <= 14) mods = [ 'Freemod' ]
-						if (counter == 15) mods = [ 'Tiebreaker' ]
+						var mod = 'NM'
+						if (counter >= 6 && counter <= 7) mod = 'HD'
+						if (counter >= 8 && counter <= 9) mod = 'HR'
+						if (counter >= 10 && counter <= 11) mod = 'DT'
+						if (counter >= 12 && counter <= 14) mod = 'FM'
+						if (counter == 15) mod = 'TB'
 						this.mappool.slots.push({
 							beatmap: result.data,
-							mods: mods
+							mod: mod
 						})
 					}
 					this.bulkWorker(counter + 1)
@@ -289,23 +278,8 @@ export default {
 			let slot = this.mappool.slots.find((mappoolSlot) => {
 				return mappoolSlot.beatmap == this.beatmap
 			})
-			slot.mods = this.mods
+			slot.mod = this.mod
 			this.cancel()
-		},
-		sortMods(mods) {
-			var modsCopy = mods.slice()
-			modsCopy.sort(function(a, b) {
-				if (a == 'HD')
-					return -1
-				if (a == 'DT')
-					return 1
-				if (b == 'HD')
-					return 1
-				if (b == 'DT')
-					return -1
-				return 0
-			})
-			return modsCopy
 		}
 	},
 	watch: {
@@ -319,23 +293,6 @@ export default {
 					_id: null,
 					name: null,
 					slots: []
-				}
-			}
-		},
-		mods(newMods, oldMods) {
-			if (newMods.length) {
-				switch (newMods[newMods.length - 1]) {
-					case 'HD':
-					case 'HR':
-					case 'DT':
-						this.removeMods(newMods, [ 'Freemod', 'Tiebreaker' ])
-						break
-					case 'Freemod':
-						this.removeMods(newMods, [ 'HD', 'HR', 'DT', 'Tiebreaker' ])
-						break
-					case 'Tiebreaker':
-						this.removeMods(newMods, [ 'HD', 'HR', 'DT', 'Freemod' ])
-						break
 				}
 			}
 		},
