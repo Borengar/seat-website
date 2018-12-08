@@ -26,7 +26,11 @@ v-layout(column)
 			v-stepper-content(step="3")
 				h1 Bans
 				v-layout(row)
-					v-select.mr-2.beatmap-select(label="Beatmap" v-model="selectedBeatmap"  :items="mappool.slots" item-text="beatmap.beatmapset.title" item-value="beatmap.id")
+					v-select.mr-2.beatmap-select(label="Beatmap" v-model="selectedBeatmap"  :items="mappool.slots" item-value="beatmap.id")
+						template(slot="item" slot-scope="data")
+							span [{{ getModNumber(data.item.beatmap.id) }}] {{ data.item.beatmap.beatmapset.title }}
+						template(slot="selection" slot-scope="data")
+							span [{{ getModNumber(data.item.beatmap.id) }}] {{ data.item.beatmap.beatmapset.title }}
 					v-select.player-select(label="Player" v-model="selectedPlayer"  :items="players" item-text="username" item-value="id")
 					v-btn(@click="addBan" color="success"  :disabled="addBanDisabled") Add
 				v-data-table.ban-table(:items="bans" item-key="beatmap.beatmap.id" hide-actions)
@@ -47,7 +51,9 @@ v-layout(column)
 			v-stepper-content(step="4")
 				h1 Picks
 				v-layout(row v-for="game in games"  :key="game.id")
-					v-checkbox.mr-2.pick-counts(v-model="game.counts"  :label="game.game.beatmap.beatmapset.title")
+					v-checkbox.mr-2.pick-counts(v-model="game.counts")
+						template(slot="label")
+							span [{{ getModNumber(game.game.beatmap.id) }}] {{ game.game.beatmap.beatmapset.title }}
 					v-select.mr-2.player-select(label="Picked by" v-model="game.pickedBy"  :items="players" item-text="username"  item-value="id"  :disabled="!game.counts")
 					v-checkbox.pick-counts(v-model="game.isTiebreaker" label="Tiebreaker")
 				v-btn(@click="choosePicks" color="success") Continue
