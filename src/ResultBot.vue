@@ -183,10 +183,13 @@ export default {
 						this.players[1].score++
 					} else if (score1 == null) {
 						this.players[0].score++
+					} else if (score0.multiplayer.pass > score1.multiplayer.pass) {
+						this.players[0].score++
+					} else if (score1.multiplayer.pass > score0.multiplayer.pass) {
+						this.players[1].score++
 					} else if (score0.score > score1.score) {
 						this.players[0].score++
-					}
-					else {
+					} else {
 						this.players[1].score++
 					}
 					this.games[i].mod = this.mappool.slots.find(slot => slot.beatmap.id == this.games[i].game.beatmap.id).mod
